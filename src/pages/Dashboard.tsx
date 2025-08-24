@@ -7,8 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, Plus, LogOut } from "lucide-react";
+import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, Plus, LogOut, Upload, Search, TrendingUp } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface User {
   email: string;
@@ -28,6 +32,14 @@ interface Professional {
   name: string;
   specialty: string;
   availability: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+  description: string;
 }
 
 interface Appointment {
@@ -50,6 +62,13 @@ interface Payment {
   notes: string;
 }
 
+interface SalonSettings {
+  name: string;
+  address: string;
+  phone: string;
+  logo: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,14 +78,22 @@ const Dashboard = () => {
   // States for data
   const [clients, setClients] = useState<Client[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [salonSettings, setSalonSettings] = useState<SalonSettings>({ name: "", address: "", phone: "", logo: "" });
 
   // Form states
   const [newClient, setNewClient] = useState({ name: "", phone: "", email: "", notes: "" });
   const [newProfessional, setNewProfessional] = useState({ name: "", specialty: "", availability: "" });
+  const [newService, setNewService] = useState({ name: "", price: "", duration: "", description: "" });
   const [newAppointment, setNewAppointment] = useState({ client: "", service: "", professional: "", date: "", time: "", notes: "" });
   const [newPayment, setNewPayment] = useState({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "" });
+
+  // UI states
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [clientSearch, setClientSearch] = useState("");
+  const [showServiceForm, setShowServiceForm] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem("easyhora_user");
@@ -79,8 +106,10 @@ const Dashboard = () => {
     // Load data from localStorage
     setClients(JSON.parse(localStorage.getItem("easyhora_clients") || "[]"));
     setProfessionals(JSON.parse(localStorage.getItem("easyhora_professionals") || "[]"));
+    setServices(JSON.parse(localStorage.getItem("easyhora_services") || "[]"));
     setAppointments(JSON.parse(localStorage.getItem("easyhora_appointments") || "[]"));
     setPayments(JSON.parse(localStorage.getItem("easyhora_payments") || "[]"));
+    setSalonSettings(JSON.parse(localStorage.getItem("easyhora_salon_settings") || '{"name":"","address":"","phone":"","logo":""}'));
   }, [navigate]);
 
   const handleLogout = () => {
@@ -118,6 +147,27 @@ const Dashboard = () => {
     toast({ title: "Sucesso", description: "Profissional adicionado com sucesso!" });
   };
 
+  const handleAddService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newService.name || !newService.price) {
+      toast({ title: "Erro", description: "Nome e preço são obrigatórios.", variant: "destructive" });
+      return;
+    }
+    
+    const service: Service = { 
+      ...newService, 
+      price: Number(newService.price),
+      duration: Number(newService.duration) || 30,
+      id: Date.now().toString() 
+    };
+    const updated = [...services, service];
+    setServices(updated);
+    localStorage.setItem("easyhora_services", JSON.stringify(updated));
+    setNewService({ name: "", price: "", duration: "", description: "" });
+    setShowServiceForm(false);
+    toast({ title: "Sucesso", description: "Serviço adicionado com sucesso!" });
+  };
+
   const handleAddAppointment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAppointment.client || !newAppointment.service || !newAppointment.date) {
@@ -125,11 +175,16 @@ const Dashboard = () => {
       return;
     }
     
-    const appointment: Appointment = { ...newAppointment, id: Date.now().toString() };
+    const appointment: Appointment = { 
+      ...newAppointment, 
+      date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : newAppointment.date,
+      id: Date.now().toString() 
+    };
     const updated = [...appointments, appointment];
     setAppointments(updated);
     localStorage.setItem("easyhora_appointments", JSON.stringify(updated));
     setNewAppointment({ client: "", service: "", professional: "", date: "", time: "", notes: "" });
+    setSelectedDate(undefined);
     toast({ title: "Sucesso", description: "Agendamento criado com sucesso!" });
   };
 
@@ -146,6 +201,23 @@ const Dashboard = () => {
     localStorage.setItem("easyhora_payments", JSON.stringify(updated));
     setNewPayment({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "" });
     toast({ title: "Sucesso", description: "Pagamento registrado com sucesso!" });
+  };
+
+  const handleSaveSettings = () => {
+    localStorage.setItem("easyhora_salon_settings", JSON.stringify(salonSettings));
+    toast({ title: "Sucesso", description: "Configurações salvas com sucesso!" });
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const logoData = e.target?.result as string;
+        setSalonSettings(prev => ({ ...prev, logo: logoData }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -177,7 +249,7 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-secondary">
+          <TabsList className="grid w-full grid-cols-7 bg-secondary">
             <TabsTrigger value="appointments" className="flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Agendamentos</span>
@@ -189,6 +261,10 @@ const Dashboard = () => {
             <TabsTrigger value="professionals" className="flex items-center space-x-2">
               <UserPlus className="w-4 h-4" />
               <span className="hidden sm:inline">Profissionais</span>
+            </TabsTrigger>
+            <TabsTrigger value="services" className="flex items-center space-x-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Serviços</span>
             </TabsTrigger>
             <TabsTrigger value="cashier" className="flex items-center space-x-2">
               <DollarSign className="w-4 h-4" />
@@ -218,44 +294,154 @@ const Dashboard = () => {
                   <form onSubmit={handleAddAppointment} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="client" className="text-foreground">Cliente</Label>
-                      <Input
-                        id="client"
-                        placeholder="Nome do cliente"
-                        value={newAppointment.client}
-                        onChange={(e) => setNewAppointment({ ...newAppointment, client: e.target.value })}
-                        className="bg-input border-border text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="service" className="text-foreground">Serviço</Label>
-                      <Input
-                        id="service"
-                        placeholder="Tipo de serviço"
-                        value={newAppointment.service}
-                        onChange={(e) => setNewAppointment({ ...newAppointment, service: e.target.value })}
-                        className="bg-input border-border text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="professional" className="text-foreground">Profissional</Label>
-                      <Input
-                        id="professional"
-                        placeholder="Nome do profissional"
-                        value={newAppointment.professional}
-                        onChange={(e) => setNewAppointment({ ...newAppointment, professional: e.target.value })}
-                        className="bg-input border-border text-foreground"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="date" className="text-foreground">Data</Label>
+                      <div className="relative">
                         <Input
-                          id="date"
-                          type="date"
-                          value={newAppointment.date}
-                          onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value })}
+                          id="client"
+                          placeholder="Buscar ou digitar nome"
+                          value={clientSearch}
+                          onChange={(e) => {
+                            setClientSearch(e.target.value);
+                            setNewAppointment({ ...newAppointment, client: e.target.value });
+                          }}
                           className="bg-input border-border text-foreground"
                         />
+                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      </div>
+                      {clientSearch && (
+                        <div className="bg-popover border border-border rounded-lg max-h-32 overflow-y-auto">
+                          {clients
+                            .filter(client => client.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                            .map(client => (
+                              <div
+                                key={client.id}
+                                className="p-2 hover:bg-accent cursor-pointer"
+                                onClick={() => {
+                                  setNewAppointment({ ...newAppointment, client: client.name });
+                                  setClientSearch(client.name);
+                                }}
+                              >
+                                <p className="text-foreground text-sm">{client.name}</p>
+                                <p className="text-muted-foreground text-xs">{client.phone}</p>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="service" className="text-foreground">Serviço</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowServiceForm(true)}
+                          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Novo
+                        </Button>
+                      </div>
+                      <Select value={newAppointment.service} onValueChange={(value) => setNewAppointment({ ...newAppointment, service: value })}>
+                        <SelectTrigger className="bg-input border-border text-foreground">
+                          <SelectValue placeholder="Selecione um serviço" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {services.map((service) => (
+                            <SelectItem key={service.id} value={service.name}>
+                              {service.name} - R$ {service.price.toFixed(2)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {showServiceForm && (
+                      <Card className="border-primary">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm text-foreground">Novo Serviço</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <form onSubmit={handleAddService} className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder="Nome do serviço"
+                                value={newService.name}
+                                onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                                className="bg-input border-border text-foreground text-sm"
+                              />
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Preço"
+                                value={newService.price}
+                                onChange={(e) => setNewService({ ...newService, price: e.target.value })}
+                                className="bg-input border-border text-foreground text-sm"
+                              />
+                            </div>
+                            <Input
+                              type="number"
+                              placeholder="Duração (min)"
+                              value={newService.duration}
+                              onChange={(e) => setNewService({ ...newService, duration: e.target.value })}
+                              className="bg-input border-border text-foreground text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <Button type="submit" size="sm" className="gradient-primary text-primary-foreground">
+                                Salvar
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={() => setShowServiceForm(false)}>
+                                Cancelar
+                              </Button>
+                            </div>
+                          </form>
+                        </CardContent>
+                      </Card>
+                    )}
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="professional" className="text-foreground">Profissional</Label>
+                      <Select value={newAppointment.professional} onValueChange={(value) => setNewAppointment({ ...newAppointment, professional: value })}>
+                        <SelectTrigger className="bg-input border-border text-foreground">
+                          <SelectValue placeholder="Selecione um profissional" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {professionals.map((professional) => (
+                            <SelectItem key={professional.id} value={professional.name}>
+                              {professional.name} - {professional.specialty}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-foreground">Data</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal bg-input border-border",
+                                !selectedDate && "text-muted-foreground"
+                              )}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Selecione uma data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={setSelectedDate}
+                              disabled={false}
+                              initialFocus
+                              className="bg-popover"
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="time" className="text-foreground">Hora</Label>
@@ -278,9 +464,22 @@ const Dashboard = () => {
                         className="bg-input border-border text-foreground"
                       />
                     </div>
-                    <Button type="submit" className="w-full gradient-primary text-primary-foreground hover:shadow-golden transition-smooth">
-                      Salvar Agendamento
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button type="submit" className="flex-1 gradient-primary text-primary-foreground hover:shadow-golden transition-smooth">
+                        Salvar Agendamento
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setNewAppointment({ client: "", service: "", professional: "", date: "", time: "", notes: "" });
+                          setSelectedDate(undefined);
+                          setClientSearch("");
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
                   </form>
                 </CardContent>
               </Card>
@@ -407,6 +606,104 @@ const Dashboard = () => {
             </div>
           </TabsContent>
 
+          {/* Services Tab */}
+          <TabsContent value="services" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Adicionar Serviço
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAddService} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceName" className="text-foreground">Nome do Serviço</Label>
+                      <Input
+                        id="serviceName"
+                        placeholder="Ex: Corte de Cabelo"
+                        value={newService.name}
+                        onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                        className="bg-input border-border text-foreground"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="servicePrice" className="text-foreground">Preço (R$)</Label>
+                        <Input
+                          id="servicePrice"
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={newService.price}
+                          onChange={(e) => setNewService({ ...newService, price: e.target.value })}
+                          className="bg-input border-border text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="serviceDuration" className="text-foreground">Duração (min)</Label>
+                        <Input
+                          id="serviceDuration"
+                          type="number"
+                          placeholder="30"
+                          value={newService.duration}
+                          onChange={(e) => setNewService({ ...newService, duration: e.target.value })}
+                          className="bg-input border-border text-foreground"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceDescription" className="text-foreground">Descrição</Label>
+                      <Textarea
+                        id="serviceDescription"
+                        placeholder="Descrição do serviço"
+                        value={newService.description}
+                        onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                        className="bg-input border-border text-foreground"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full gradient-primary text-primary-foreground hover:shadow-golden transition-smooth">
+                      Adicionar Serviço
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Lista de Serviços</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    {services.length} serviço(s) cadastrado(s)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {services.map((service) => (
+                      <div key={service.id} className="p-4 bg-secondary rounded-lg border border-border">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{service.name}</p>
+                            <div className="flex items-center gap-4 mt-1">
+                              <p className="text-lg font-bold text-primary">R$ {service.price.toFixed(2)}</p>
+                              <p className="text-sm text-muted-foreground">{service.duration} min</p>
+                            </div>
+                            {service.description && (
+                              <p className="text-sm text-muted-foreground mt-2">{service.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {services.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">Nenhum serviço cadastrado</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Professionals Tab */}
           <TabsContent value="professionals" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -511,23 +808,33 @@ const Dashboard = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="paymentClient" className="text-foreground">Cliente</Label>
-                      <Input
-                        id="paymentClient"
-                        placeholder="Nome do cliente"
-                        value={newPayment.client}
-                        onChange={(e) => setNewPayment({ ...newPayment, client: e.target.value })}
-                        className="bg-input border-border text-foreground"
-                      />
+                      <Select value={newPayment.client} onValueChange={(value) => setNewPayment({ ...newPayment, client: value })}>
+                        <SelectTrigger className="bg-input border-border text-foreground">
+                          <SelectValue placeholder="Selecione um cliente" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.name}>
+                              {client.name} - {client.phone}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="paymentService" className="text-foreground">Serviço</Label>
-                      <Input
-                        id="paymentService"
-                        placeholder="Tipo de serviço"
-                        value={newPayment.service}
-                        onChange={(e) => setNewPayment({ ...newPayment, service: e.target.value })}
-                        className="bg-input border-border text-foreground"
-                      />
+                      <Select value={newPayment.service} onValueChange={(value) => setNewPayment({ ...newPayment, service: value })}>
+                        <SelectTrigger className="bg-input border-border text-foreground">
+                          <SelectValue placeholder="Selecione um serviço" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {services.map((service) => (
+                            <SelectItem key={service.id} value={service.name}>
+                              {service.name} - R$ {service.price.toFixed(2)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="amount" className="text-foreground">Valor (R$)</Label>
@@ -547,11 +854,11 @@ const Dashboard = () => {
                         <SelectTrigger className="bg-input border-border text-foreground">
                           <SelectValue placeholder="Selecione a forma" />
                         </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                          <SelectItem value="cartao-debito">Cartão de Débito</SelectItem>
-                          <SelectItem value="cartao-credito">Cartão de Crédito</SelectItem>
-                          <SelectItem value="pix">PIX</SelectItem>
+                        <SelectContent className="bg-popover border-border z-50">
+                          <SelectItem value="dinheiro" className="text-foreground">Dinheiro</SelectItem>
+                          <SelectItem value="cartao-debito" className="text-foreground">Cartão de Débito</SelectItem>
+                          <SelectItem value="cartao-credito" className="text-foreground">Cartão de Crédito</SelectItem>
+                          <SelectItem value="pix" className="text-foreground">PIX</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -604,10 +911,13 @@ const Dashboard = () => {
 
           {/* Reports Tab */}
           <TabsContent value="reports" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="gradient-card shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Faturamento Total</CardTitle>
+                  <CardTitle className="text-foreground flex items-center">
+                    <DollarSign className="w-5 h-5 mr-2 text-primary" />
+                    Faturamento Total
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">R$ {totalRevenue.toFixed(2)}</div>
@@ -617,7 +927,10 @@ const Dashboard = () => {
               
               <Card className="gradient-card shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Agendamentos</CardTitle>
+                  <CardTitle className="text-foreground flex items-center">
+                    <Calendar className="w-5 h-5 mr-2 text-primary" />
+                    Agendamentos
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">{appointments.length}</div>
@@ -627,14 +940,163 @@ const Dashboard = () => {
               
               <Card className="gradient-card shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Clientes Ativos</CardTitle>
+                  <CardTitle className="text-foreground flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-primary" />
+                    Clientes Ativos
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">{clients.length}</div>
                   <p className="text-muted-foreground">Clientes cadastrados</p>
                 </CardContent>
               </Card>
+
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-primary" />
+                    Crescimento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-primary">
+                    {appointments.filter(apt => {
+                      const today = new Date();
+                      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                      const aptDate = new Date(apt.date);
+                      return aptDate >= weekAgo && aptDate <= today;
+                    }).length}
+                  </div>
+                  <p className="text-muted-foreground">Agendamentos esta semana</p>
+                </CardContent>
+              </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Relatório por Serviços</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {services.map(service => {
+                      const servicePayments = payments.filter(p => p.service === service.name);
+                      const serviceTotal = servicePayments.reduce((sum, p) => sum + p.amount, 0);
+                      return (
+                        <div key={service.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                          <div>
+                            <p className="font-medium text-foreground">{service.name}</p>
+                            <p className="text-sm text-muted-foreground">{servicePayments.length} realizados</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary">R$ {serviceTotal.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">Preço: R$ {service.price.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {services.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">Nenhum serviço cadastrado</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Relatório por Profissional</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {professionals.map(professional => {
+                      const profAppointments = appointments.filter(apt => apt.professional === professional.name);
+                      const profPayments = payments.filter(p => 
+                        appointments.find(apt => apt.client === p.client && apt.service === p.service && apt.professional === professional.name)
+                      );
+                      const profTotal = profPayments.reduce((sum, p) => sum + p.amount, 0);
+                      return (
+                        <div key={professional.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                          <div>
+                            <p className="font-medium text-foreground">{professional.name}</p>
+                            <p className="text-sm text-muted-foreground">{professional.specialty}</p>
+                            <p className="text-xs text-muted-foreground">{profAppointments.length} agendamentos</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary">R$ {profTotal.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {professionals.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">Nenhum profissional cadastrado</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="gradient-card shadow-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Faturamento Detalhado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">
+                      R$ {payments.filter(p => p.date === new Date().toISOString().split('T')[0])
+                        .reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Hoje</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">
+                      R$ {payments.filter(p => {
+                        const today = new Date();
+                        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        const paymentDate = new Date(p.date);
+                        return paymentDate >= weekAgo && paymentDate <= today;
+                      }).reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Esta Semana</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">
+                      R$ {payments.filter(p => {
+                        const today = new Date();
+                        const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+                        const paymentDate = new Date(p.date);
+                        return paymentDate >= monthAgo && paymentDate <= today;
+                      }).reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Este Mês</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">R$ {totalRevenue.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">Total Geral</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-foreground">Por Forma de Pagamento:</h4>
+                  {['dinheiro', 'cartao-debito', 'cartao-credito', 'pix'].map(method => {
+                    const methodPayments = payments.filter(p => p.paymentMethod === method);
+                    const methodTotal = methodPayments.reduce((sum, p) => sum + p.amount, 0);
+                    const methodNames = {
+                      'dinheiro': 'Dinheiro',
+                      'cartao-debito': 'Cartão de Débito', 
+                      'cartao-credito': 'Cartão de Crédito',
+                      'pix': 'PIX'
+                    };
+                    return methodTotal > 0 ? (
+                      <div key={method} className="flex justify-between items-center p-2 bg-secondary rounded">
+                        <span className="text-foreground">{methodNames[method]}</span>
+                        <span className="font-medium text-primary">R$ {methodTotal.toFixed(2)} ({methodPayments.length}x)</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Settings Tab */}
@@ -649,10 +1111,44 @@ const Dashboard = () => {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="logoUpload" className="text-foreground">Logo do Salão</Label>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        id="logoUpload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('logoUpload')?.click()}
+                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Carregar Logo
+                      </Button>
+                      {salonSettings.logo && (
+                        <div className="flex items-center space-x-2">
+                          <img 
+                            src={salonSettings.logo} 
+                            alt="Logo preview" 
+                            className="w-12 h-12 object-cover rounded-lg border border-border"
+                          />
+                          <span className="text-sm text-success">Logo carregada!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="salonName" className="text-foreground">Nome do Salão</Label>
                     <Input
                       id="salonName"
                       placeholder="Nome do seu salão"
+                      value={salonSettings.name}
+                      onChange={(e) => setSalonSettings(prev => ({ ...prev, name: e.target.value }))}
                       className="bg-input border-border text-foreground"
                     />
                   </div>
@@ -661,6 +1157,8 @@ const Dashboard = () => {
                     <Input
                       id="salonAddress"
                       placeholder="Endereço completo"
+                      value={salonSettings.address}
+                      onChange={(e) => setSalonSettings(prev => ({ ...prev, address: e.target.value }))}
                       className="bg-input border-border text-foreground"
                     />
                   </div>
@@ -669,9 +1167,18 @@ const Dashboard = () => {
                     <Input
                       id="salonPhone"
                       placeholder="(11) 99999-9999"
+                      value={salonSettings.phone}
+                      onChange={(e) => setSalonSettings(prev => ({ ...prev, phone: e.target.value }))}
                       className="bg-input border-border text-foreground"
                     />
                   </div>
+
+                  <Button 
+                    onClick={handleSaveSettings} 
+                    className="w-full gradient-primary text-primary-foreground hover:shadow-golden transition-smooth"
+                  >
+                    Salvar Configurações
+                  </Button>
                 </div>
                 
                 <div className="pt-6 border-t border-border">
