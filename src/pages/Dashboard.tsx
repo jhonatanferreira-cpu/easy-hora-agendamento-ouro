@@ -50,6 +50,8 @@ interface Appointment {
   date: string;
   time: string;
   notes: string;
+  status: 'agendado' | 'finalizado' | 'cancelado';
+  cancelReason?: string;
 }
 
 interface Payment {
@@ -94,6 +96,10 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [clientSearch, setClientSearch] = useState("");
   const [showServiceForm, setShowServiceForm] = useState(false);
+  const [professionalFilter, setProfessionalFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [showMyAppointments, setShowMyAppointments] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem("easyhora_user");
@@ -110,6 +116,7 @@ const Dashboard = () => {
     setAppointments(JSON.parse(localStorage.getItem("easyhora_appointments") || "[]"));
     setPayments(JSON.parse(localStorage.getItem("easyhora_payments") || "[]"));
     setSalonSettings(JSON.parse(localStorage.getItem("easyhora_salon_settings") || '{"name":"","address":"","phone":"","logo":""}'));
+    setBlockedDates(JSON.parse(localStorage.getItem("easyhora_blocked_dates") || "[]"));
   }, [navigate]);
 
   const handleLogout = () => {
@@ -170,14 +177,27 @@ const Dashboard = () => {
 
   const handleAddAppointment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAppointment.client || !newAppointment.service || !newAppointment.date) {
+    
+    const finalClient = clientSearch || newAppointment.client;
+    const finalDate = selectedDate ? format(selectedDate, "yyyy-MM-dd") : newAppointment.date;
+    
+    if (!finalClient || !newAppointment.service || !finalDate) {
       toast({ title: "Erro", description: "Cliente, serviço e data são obrigatórios.", variant: "destructive" });
       return;
     }
     
+    // Verificar se a data não está bloqueada
+    if (blockedDates.includes(finalDate)) {
+      toast({ title: "Erro", description: "Esta data está bloqueada para agendamentos.", variant: "destructive" });
+      return;
+    }
+    
+    const selectedService = services.find(s => s.name === newAppointment.service);
     const appointment: Appointment = { 
       ...newAppointment, 
-      date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : newAppointment.date,
+      client: finalClient,
+      date: finalDate,
+      status: 'agendado',
       id: Date.now().toString() 
     };
     const updated = [...appointments, appointment];
@@ -185,7 +205,33 @@ const Dashboard = () => {
     localStorage.setItem("easyhora_appointments", JSON.stringify(updated));
     setNewAppointment({ client: "", service: "", professional: "", date: "", time: "", notes: "" });
     setSelectedDate(undefined);
-    toast({ title: "Sucesso", description: "Agendamento criado com sucesso!" });
+    setClientSearch("");
+    
+    const serviceName = selectedService ? `${selectedService.name} (${selectedService.duration}min)` : newAppointment.service;
+    toast({ 
+      title: "Agendamento Confirmado!", 
+      description: `${serviceName} agendado para ${format(new Date(finalDate), "dd/MM/yyyy")} às ${newAppointment.time}h com ${finalClient}` 
+    });
+  };
+  
+  const handleUpdateAppointmentStatus = (appointmentId: string, status: 'finalizado' | 'cancelado', cancelReason?: string) => {
+    const updated = appointments.map(apt => 
+      apt.id === appointmentId 
+        ? { ...apt, status, cancelReason: cancelReason || apt.cancelReason }
+        : apt
+    );
+    setAppointments(updated);
+    localStorage.setItem("easyhora_appointments", JSON.stringify(updated));
+    
+    const statusText = status === 'finalizado' ? 'finalizado' : 'cancelado';
+    toast({ title: "Status Atualizado", description: `Agendamento ${statusText} com sucesso!` });
+  };
+  
+  const handleBlockDate = (date: string) => {
+    const updated = [...blockedDates, date];
+    setBlockedDates(updated);
+    localStorage.setItem("easyhora_blocked_dates", JSON.stringify(updated));
+    toast({ title: "Data Bloqueada", description: `Data ${format(new Date(date), "dd/MM/yyyy")} bloqueada para agendamentos.` });
   };
 
   const handleAddPayment = (e: React.FormEvent) => {
@@ -249,10 +295,14 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-secondary">
+          <TabsList className="grid w-full grid-cols-8 bg-secondary">
             <TabsTrigger value="appointments" className="flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Agendamentos</span>
+            </TabsTrigger>
+            <TabsTrigger value="my-appointments" className="flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Meus Agendamentos</span>
             </TabsTrigger>
             <TabsTrigger value="clients" className="flex items-center space-x-2">
               <Users className="w-4 h-4" />
@@ -431,16 +481,16 @@ const Dashboard = () => {
                               {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Selecione uma data"}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={selectedDate}
-                              onSelect={setSelectedDate}
-                              disabled={false}
-                              initialFocus
-                              className="bg-popover"
-                            />
-                          </PopoverContent>
+                           <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
+                             <CalendarComponent
+                               mode="single"
+                               selected={selectedDate}
+                               onSelect={setSelectedDate}
+                               disabled={(date) => blockedDates.includes(format(date, "yyyy-MM-dd"))}
+                               initialFocus
+                               className="bg-popover pointer-events-auto"
+                             />
+                           </PopoverContent>
                         </Popover>
                       </div>
                       <div className="space-y-2">
@@ -493,20 +543,199 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).map((appointment) => (
-                      <div key={appointment.id} className="p-4 bg-secondary rounded-lg border border-border">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-foreground">{appointment.client}</p>
-                            <p className="text-sm text-muted-foreground">{appointment.service}</p>
-                            <p className="text-sm text-muted-foreground">{appointment.time}</p>
+                    {/* Filtros */}
+                    <div className="flex gap-2 mb-4">
+                      <Select value={professionalFilter} onValueChange={setProfessionalFilter}>
+                        <SelectTrigger className="w-[200px] bg-input border-border text-foreground">
+                          <SelectValue placeholder="Filtrar por profissional" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          <SelectItem value="">Todos os profissionais</SelectItem>
+                          {professionals.map((prof) => (
+                            <SelectItem key={prof.id} value={prof.name}>{prof.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="date"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        className="w-[200px] bg-input border-border text-foreground"
+                        placeholder="Filtrar por data"
+                      />
+                    </div>
+                    
+                    {appointments.filter(apt => {
+                      const matchesDate = dateFilter ? apt.date === dateFilter : apt.date === new Date().toISOString().split('T')[0];
+                      const matchesProfessional = professionalFilter ? apt.professional === professionalFilter : true;
+                      return matchesDate && matchesProfessional;
+                    }).map((appointment) => {
+                      const service = services.find(s => s.name === appointment.service);
+                      const getStatusColor = (status: string) => {
+                        switch(status) {
+                          case 'agendado': return 'text-blue-500';
+                          case 'finalizado': return 'text-green-500';
+                          case 'cancelado': return 'text-gray-500';
+                          default: return 'text-blue-500';
+                        }
+                      };
+                      
+                      return (
+                        <div key={appointment.id} className="p-4 bg-secondary rounded-lg border border-border">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium text-foreground">{appointment.client}</p>
+                                <span className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(appointment.status)}`}>
+                                  {appointment.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {service ? `${service.name} (${service.duration}min)` : appointment.service}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{appointment.time}h</p>
+                              <p className="text-sm text-primary">{appointment.professional}</p>
+                            </div>
+                            <div className="flex gap-2 ml-2">
+                              {appointment.status === 'agendado' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUpdateAppointmentStatus(appointment.id, 'finalizado')}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    Finalizar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      const reason = window.prompt("Motivo do cancelamento (opcional):");
+                                      handleUpdateAppointmentStatus(appointment.id, 'cancelado', reason || undefined);
+                                    }}
+                                    className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-primary font-medium">{appointment.professional}</span>
+                          {appointment.cancelReason && (
+                            <p className="text-xs text-muted-foreground mt-2">Motivo: {appointment.cancelReason}</p>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                    {todayAppointments === 0 && (
-                      <p className="text-muted-foreground text-center py-8">Nenhum agendamento para hoje</p>
+                      );
+                    })}
+                    {appointments.filter(apt => {
+                      const matchesDate = dateFilter ? apt.date === dateFilter : apt.date === new Date().toISOString().split('T')[0];
+                      const matchesProfessional = professionalFilter ? apt.professional === professionalFilter : true;
+                      return matchesDate && matchesProfessional;
+                    }).length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">Nenhum agendamento encontrado</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* My Appointments Tab */}
+          <TabsContent value="my-appointments" className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Meus Agendamentos</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Visualize todos os seus agendamentos passados e futuros
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex gap-2 mb-4">
+                      <Input
+                        type="date"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        className="w-[200px] bg-input border-border text-foreground"
+                        placeholder="Filtrar por data"
+                      />
+                      <Select value={professionalFilter} onValueChange={setProfessionalFilter}>
+                        <SelectTrigger className="w-[200px] bg-input border-border text-foreground">
+                          <SelectValue placeholder="Filtrar por profissional" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          <SelectItem value="">Todos os profissionais</SelectItem>
+                          {professionals.map((prof) => (
+                            <SelectItem key={prof.id} value={prof.name}>{prof.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const dateToBlock = window.prompt("Digite a data para bloquear (YYYY-MM-DD):");
+                          if (dateToBlock && /^\d{4}-\d{2}-\d{2}$/.test(dateToBlock)) {
+                            handleBlockDate(dateToBlock);
+                          }
+                        }}
+                        className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                      >
+                        Bloquear Data
+                      </Button>
+                    </div>
+                    
+                    {appointments
+                      .filter(apt => {
+                        const matchesDate = dateFilter ? apt.date === dateFilter : true;
+                        const matchesProfessional = professionalFilter ? apt.professional === professionalFilter : true;
+                        return matchesDate && matchesProfessional;
+                      })
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((appointment) => {
+                        const service = services.find(s => s.name === appointment.service);
+                        const getStatusColor = (status: string) => {
+                          switch(status) {
+                            case 'agendado': return 'bg-blue-100 text-blue-800 border-blue-200';
+                            case 'finalizado': return 'bg-green-100 text-green-800 border-green-200';
+                            case 'cancelado': return 'bg-gray-100 text-gray-800 border-gray-200';
+                            default: return 'bg-blue-100 text-blue-800 border-blue-200';
+                          }
+                        };
+                        
+                        return (
+                          <div key={appointment.id} className="p-4 bg-secondary rounded-lg border border-border">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <p className="font-medium text-foreground">{appointment.client}</p>
+                                  <span className={`text-xs font-medium px-2 py-1 rounded border ${getStatusColor(appointment.status)}`}>
+                                    {appointment.status.toUpperCase()}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {service ? `${service.name} (${service.duration}min)` : appointment.service}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {format(new Date(appointment.date), "dd/MM/yyyy")} às {appointment.time}h
+                                </p>
+                                <p className="text-sm text-primary">{appointment.professional}</p>
+                                {appointment.notes && (
+                                  <p className="text-xs text-muted-foreground mt-1">Obs: {appointment.notes}</p>
+                                )}
+                              </div>
+                            </div>
+                            {appointment.cancelReason && (
+                              <p className="text-xs text-muted-foreground mt-2 p-2 bg-red-50 rounded">
+                                Motivo do cancelamento: {appointment.cancelReason}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    
+                    {appointments.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">Nenhum agendamento encontrado</p>
                     )}
                   </div>
                 </CardContent>
@@ -854,12 +1083,12 @@ const Dashboard = () => {
                         <SelectTrigger className="bg-input border-border text-foreground">
                           <SelectValue placeholder="Selecione a forma" />
                         </SelectTrigger>
-                        <SelectContent className="bg-popover border-border z-50">
-                          <SelectItem value="dinheiro" className="text-foreground">Dinheiro</SelectItem>
-                          <SelectItem value="cartao-debito" className="text-foreground">Cartão de Débito</SelectItem>
-                          <SelectItem value="cartao-credito" className="text-foreground">Cartão de Crédito</SelectItem>
-                          <SelectItem value="pix" className="text-foreground">PIX</SelectItem>
-                        </SelectContent>
+                         <SelectContent className="bg-popover border-border z-50">
+                           <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                           <SelectItem value="cartao-debito">Cartão de Débito</SelectItem>
+                           <SelectItem value="cartao-credito">Cartão de Crédito</SelectItem>
+                           <SelectItem value="pix">PIX</SelectItem>
+                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
