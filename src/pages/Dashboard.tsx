@@ -113,7 +113,15 @@ const Dashboard = () => {
     setClients(JSON.parse(localStorage.getItem("easyhora_clients") || "[]"));
     setProfessionals(JSON.parse(localStorage.getItem("easyhora_professionals") || "[]"));
     setServices(JSON.parse(localStorage.getItem("easyhora_services") || "[]"));
-    setAppointments(JSON.parse(localStorage.getItem("easyhora_appointments") || "[]"));
+    
+    // Load appointments and add default status if missing
+    const loadedAppointments = JSON.parse(localStorage.getItem("easyhora_appointments") || "[]");
+    const appointmentsWithStatus = loadedAppointments.map((apt: any) => ({
+      ...apt,
+      status: apt.status || 'agendado'
+    }));
+    setAppointments(appointmentsWithStatus);
+    
     setPayments(JSON.parse(localStorage.getItem("easyhora_payments") || "[]"));
     setSalonSettings(JSON.parse(localStorage.getItem("easyhora_salon_settings") || '{"name":"","address":"","phone":"","logo":""}'));
     setBlockedDates(JSON.parse(localStorage.getItem("easyhora_blocked_dates") || "[]"));
@@ -587,7 +595,7 @@ const Dashboard = () => {
                               <div className="flex items-center gap-2 mb-1">
                                 <p className="font-medium text-foreground">{appointment.client}</p>
                                 <span className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(appointment.status)}`}>
-                                  {appointment.status.toUpperCase()}
+                                  {(appointment.status || 'agendado').toUpperCase()}
                                 </span>
                               </div>
                               <p className="text-sm text-muted-foreground">
@@ -710,7 +718,7 @@ const Dashboard = () => {
                                 <div className="flex items-center gap-2 mb-2">
                                   <p className="font-medium text-foreground">{appointment.client}</p>
                                   <span className={`text-xs font-medium px-2 py-1 rounded border ${getStatusColor(appointment.status)}`}>
-                                    {appointment.status.toUpperCase()}
+                                    {(appointment.status || 'agendado').toUpperCase()}
                                   </span>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
