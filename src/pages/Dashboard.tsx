@@ -96,7 +96,7 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [clientSearch, setClientSearch] = useState("");
   const [showServiceForm, setShowServiceForm] = useState(false);
-  const [professionalFilter, setProfessionalFilter] = useState("");
+  const [professionalFilter, setProfessionalFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [showMyAppointments, setShowMyAppointments] = useState(false);
@@ -558,7 +558,7 @@ const Dashboard = () => {
                           <SelectValue placeholder="Filtrar por profissional" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border">
-                          <SelectItem value="">Todos os profissionais</SelectItem>
+                          <SelectItem value="all">Todos os profissionais</SelectItem>
                           {professionals.map((prof) => (
                             <SelectItem key={prof.id} value={prof.name}>{prof.name}</SelectItem>
                           ))}
@@ -575,7 +575,7 @@ const Dashboard = () => {
                     
                     {appointments.filter(apt => {
                       const matchesDate = dateFilter ? apt.date === dateFilter : apt.date === new Date().toISOString().split('T')[0];
-                      const matchesProfessional = professionalFilter ? apt.professional === professionalFilter : true;
+                      const matchesProfessional = professionalFilter && professionalFilter !== "all" ? apt.professional === professionalFilter : true;
                       return matchesDate && matchesProfessional;
                     }).map((appointment) => {
                       const service = services.find(s => s.name === appointment.service);
@@ -645,7 +645,89 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+              
+              <Card className="gradient-card shadow-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Agendamentos Hoje</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    {todayAppointments} agendamento(s) para hoje
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <div className="space-y-4">
+                     {appointments.filter(apt => {
+                       const matchesDate = dateFilter ? apt.date === dateFilter : apt.date === new Date().toISOString().split('T')[0];
+                       const matchesProfessional = professionalFilter && professionalFilter !== "all" ? apt.professional === professionalFilter : true;
+                       return matchesDate && matchesProfessional;
+                     }).map((appointment) => {
+                       const service = services.find(s => s.name === appointment.service);
+                       const getStatusColor = (status: string) => {
+                         switch(status) {
+                           case 'agendado': return 'text-blue-500';
+                           case 'finalizado': return 'text-green-500';
+                           case 'cancelado': return 'text-gray-500';
+                           default: return 'text-blue-500';
+                         }
+                       };
+                       
+                       return (
+                         <div key={appointment.id} className="p-4 bg-secondary rounded-lg border border-border">
+                           <div className="flex justify-between items-start">
+                             <div className="flex-1">
+                               <div className="flex items-center gap-2 mb-1">
+                                 <p className="font-medium text-foreground">{appointment.client}</p>
+                                 <span className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(appointment.status)}`}>
+                                   {(appointment.status || 'agendado').toUpperCase()}
+                                 </span>
+                               </div>
+                               <p className="text-sm text-muted-foreground">
+                                 {service ? `${service.name} (${service.duration}min)` : appointment.service}
+                               </p>
+                               <p className="text-sm text-muted-foreground">{appointment.time}h</p>
+                               <p className="text-sm text-primary">{appointment.professional}</p>
+                             </div>
+                             <div className="flex gap-2 ml-2">
+                               {appointment.status === 'agendado' && (
+                                 <>
+                                   <Button
+                                     size="sm"
+                                     onClick={() => handleUpdateAppointmentStatus(appointment.id, 'finalizado')}
+                                     className="bg-green-600 hover:bg-green-700 text-white"
+                                   >
+                                     Finalizar
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     onClick={() => {
+                                       const reason = window.prompt("Motivo do cancelamento (opcional):");
+                                       handleUpdateAppointmentStatus(appointment.id, 'cancelado', reason || undefined);
+                                     }}
+                                     className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                                   >
+                                     Cancelar
+                                   </Button>
+                                 </>
+                               )}
+                             </div>
+                           </div>
+                           {appointment.cancelReason && (
+                             <p className="text-xs text-muted-foreground mt-2">Motivo: {appointment.cancelReason}</p>
+                           )}
+                         </div>
+                       );
+                     })}
+                     {appointments.filter(apt => {
+                       const matchesDate = dateFilter ? apt.date === dateFilter : apt.date === new Date().toISOString().split('T')[0];
+                       const matchesProfessional = professionalFilter && professionalFilter !== "all" ? apt.professional === professionalFilter : true;
+                       return matchesDate && matchesProfessional;
+                     }).length === 0 && (
+                       <p className="text-muted-foreground text-center py-8">Nenhum agendamento encontrado</p>
+                     )}
+                   </div>
+                 </CardContent>
+               </Card>
+             </div>
           </TabsContent>
 
           {/* My Appointments Tab */}
@@ -673,7 +755,7 @@ const Dashboard = () => {
                           <SelectValue placeholder="Filtrar por profissional" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border">
-                          <SelectItem value="">Todos os profissionais</SelectItem>
+                          <SelectItem value="all">Todos os profissionais</SelectItem>
                           {professionals.map((prof) => (
                             <SelectItem key={prof.id} value={prof.name}>{prof.name}</SelectItem>
                           ))}
@@ -696,7 +778,7 @@ const Dashboard = () => {
                     {appointments
                       .filter(apt => {
                         const matchesDate = dateFilter ? apt.date === dateFilter : true;
-                        const matchesProfessional = professionalFilter ? apt.professional === professionalFilter : true;
+                        const matchesProfessional = professionalFilter && professionalFilter !== "all" ? apt.professional === professionalFilter : true;
                         return matchesDate && matchesProfessional;
                       })
                       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
