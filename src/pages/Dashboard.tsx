@@ -68,6 +68,7 @@ interface Payment {
   amount: number;
   paymentMethod: string;
   notes: string;
+  type: 'entrada' | 'saida';
 }
 
 interface SalonSettings {
@@ -96,7 +97,7 @@ const Dashboard = () => {
   const [newProfessional, setNewProfessional] = useState({ name: "", specialty: "", availability: "" });
   const [newService, setNewService] = useState({ name: "", price: "", duration: "", description: "" });
   const [newAppointment, setNewAppointment] = useState({ client: "", service: "", professional: "", date: "", time: "", notes: "" });
-  const [newPayment, setNewPayment] = useState({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "" });
+  const [newPayment, setNewPayment] = useState({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "", type: "entrada" });
 
   // Edit states
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -112,6 +113,7 @@ const Dashboard = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [showMyAppointments, setShowMyAppointments] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("easyhora_user");
@@ -261,12 +263,14 @@ const Dashboard = () => {
       return;
     }
     
-    const payment: Payment = { ...newPayment, amount: Number(newPayment.amount), id: Date.now().toString() };
+    const payment: Payment = { ...newPayment, amount: Number(newPayment.amount), type: newPayment.type as 'entrada' | 'saida', id: Date.now().toString() };
     const updated = [...payments, payment];
     setPayments(updated);
     localStorage.setItem("easyhora_payments", JSON.stringify(updated));
-    setNewPayment({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "" });
-    toast({ title: "Sucesso", description: "Pagamento registrado com sucesso!" });
+    setNewPayment({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "", type: "entrada" });
+    
+    const actionText = newPayment.type === 'entrada' ? 'registrada' : 'registrada';
+    toast({ title: "Sucesso", description: `Movimentação ${actionText} com sucesso!` });
   };
 
   const handleSaveSettings = () => {
@@ -280,7 +284,10 @@ const Dashboard = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const logoData = e.target?.result as string;
-        setSalonSettings(prev => ({ ...prev, logo: logoData }));
+        const newSettings = { ...salonSettings, logo: logoData };
+        setSalonSettings(newSettings);
+        localStorage.setItem("easyhora_salon_settings", JSON.stringify(newSettings));
+        toast({ title: "Sucesso", description: "Logo carregado e salvo com sucesso!" });
       };
       reader.readAsDataURL(file);
     }
@@ -352,9 +359,14 @@ const Dashboard = () => {
 
   // Edit/Delete functions for appointments
   const handleEditAppointment = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+  };
+
+  const handleSaveEditedAppointment = (appointment: Appointment) => {
     const updated = appointments.map(a => a.id === appointment.id ? appointment : a);
     setAppointments(updated);
     localStorage.setItem("easyhora_appointments", JSON.stringify(updated));
+    setEditingAppointment(null);
     toast({ title: "Sucesso", description: "Agendamento atualizado com sucesso!" });
   };
 
@@ -365,7 +377,7 @@ const Dashboard = () => {
     toast({ title: "Sucesso", description: "Agendamento excluído com sucesso!" });
   };
 
-  const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalRevenue = payments.reduce((sum, payment) => sum + (payment.type === 'entrada' ? payment.amount : -payment.amount), 0);
   const todayAppointments = appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).length;
 
   if (!user) return null;
@@ -376,8 +388,12 @@ const Dashboard = () => {
       <header className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-xl font-bold text-primary-foreground">EH</span>
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center overflow-hidden">
+              {salonSettings.logo ? (
+                <img src={salonSettings.logo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xl font-bold text-primary-foreground">EH</span>
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">EasyHora</h1>
@@ -795,6 +811,101 @@ const Dashboard = () => {
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setEditingPayment(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Appointment Dialog */}
+      <Dialog open={!!editingAppointment} onOpenChange={() => setEditingAppointment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Agendamento</DialogTitle>
+          </DialogHeader>
+          {editingAppointment && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleSaveEditedAppointment(editingAppointment);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editAppClient">Cliente</Label>
+                <Select value={editingAppointment.client} onValueChange={(value) => setEditingAppointment({ ...editingAppointment, client: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.name}>
+                        {client.name} - {client.phone}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAppService">Serviço</Label>
+                <Select value={editingAppointment.service} onValueChange={(value) => setEditingAppointment({ ...editingAppointment, service: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.name}>
+                        {service.name} - R$ {service.price.toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAppProfessional">Profissional</Label>
+                <Select value={editingAppointment.professional} onValueChange={(value) => setEditingAppointment({ ...editingAppointment, professional: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um profissional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {professionals.map((prof) => (
+                      <SelectItem key={prof.id} value={prof.name}>
+                        {prof.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editAppDate">Data</Label>
+                  <Input
+                    id="editAppDate"
+                    type="date"
+                    value={editingAppointment.date}
+                    onChange={(e) => setEditingAppointment({ ...editingAppointment, date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editAppTime">Horário</Label>
+                  <Input
+                    id="editAppTime"
+                    type="time"
+                    value={editingAppointment.time}
+                    onChange={(e) => setEditingAppointment({ ...editingAppointment, time: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAppNotes">Observações</Label>
+                <Textarea
+                  id="editAppNotes"
+                  value={editingAppointment.notes}
+                  onChange={(e) => setEditingAppointment({ ...editingAppointment, notes: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setEditingAppointment(null)}>
                   Cancelar
                 </Button>
                 <Button type="submit">Salvar</Button>

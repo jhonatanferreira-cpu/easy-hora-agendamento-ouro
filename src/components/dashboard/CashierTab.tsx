@@ -40,11 +40,23 @@ export const CashierTab = ({
           <CardHeader>
             <CardTitle className="text-foreground flex items-center">
               <Plus className="w-5 h-5 mr-2" />
-              Adicionar Pagamento
+              Adicionar Movimentação
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={onAddPayment} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="movementType" className="text-foreground">Tipo de Movimentação</Label>
+                <Select value={newPayment.type || "entrada"} onValueChange={(value) => setNewPayment({ ...newPayment, type: value })}>
+                  <SelectTrigger className="bg-input border-border text-foreground">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="entrada">Entrada</SelectItem>
+                    <SelectItem value="saida">Saída</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="paymentDate" className="text-foreground">Data</Label>
                 <Input
@@ -56,34 +68,64 @@ export const CashierTab = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentClient" className="text-foreground">Cliente</Label>
-                <Select value={newPayment.client} onValueChange={(value) => setNewPayment({ ...newPayment, client: value })}>
-                  <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.name}>
-                        {client.name} - {client.phone}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="paymentClient" className="text-foreground">
+                  {newPayment.type === 'saida' ? 'Descrição' : 'Cliente'}
+                </Label>
+                {newPayment.type === 'saida' ? (
+                  <Input
+                    id="paymentDescription"
+                    placeholder="Descrição do gasto"
+                    value={newPayment.client}
+                    onChange={(e) => setNewPayment({ ...newPayment, client: e.target.value })}
+                    className="bg-input border-border text-foreground"
+                  />
+                ) : (
+                  <Select value={newPayment.client} onValueChange={(value) => setNewPayment({ ...newPayment, client: value })}>
+                    <SelectTrigger className="bg-input border-border text-foreground">
+                      <SelectValue placeholder="Selecione um cliente" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.name}>
+                          {client.name} - {client.phone}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentService" className="text-foreground">Serviço</Label>
-                <Select value={newPayment.service} onValueChange={(value) => setNewPayment({ ...newPayment, service: value })}>
-                  <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue placeholder="Selecione um serviço" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.name}>
-                        {service.name} - R$ {service.price.toFixed(2)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="paymentService" className="text-foreground">
+                  {newPayment.type === 'saida' ? 'Categoria' : 'Serviço'}
+                </Label>
+                {newPayment.type === 'saida' ? (
+                  <Select value={newPayment.service} onValueChange={(value) => setNewPayment({ ...newPayment, service: value })}>
+                    <SelectTrigger className="bg-input border-border text-foreground">
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      <SelectItem value="Produtos">Produtos</SelectItem>
+                      <SelectItem value="Aluguel">Aluguel</SelectItem>
+                      <SelectItem value="Energia">Energia</SelectItem>
+                      <SelectItem value="Internet">Internet</SelectItem>
+                      <SelectItem value="Material">Material</SelectItem>
+                      <SelectItem value="Outros">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={newPayment.service} onValueChange={(value) => setNewPayment({ ...newPayment, service: value })}>
+                    <SelectTrigger className="bg-input border-border text-foreground">
+                      <SelectValue placeholder="Selecione um serviço" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      {services.map((service) => (
+                        <SelectItem key={service.id} value={service.name}>
+                          {service.name} - R$ {service.price.toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="amount" className="text-foreground">Valor (R$)</Label>
@@ -115,14 +157,14 @@ export const CashierTab = ({
                 <Label htmlFor="paymentNotes" className="text-foreground">Observações</Label>
                 <Textarea
                   id="paymentNotes"
-                  placeholder="Observações do pagamento"
+                  placeholder="Observações da movimentação"
                   value={newPayment.notes}
                   onChange={(e) => setNewPayment({ ...newPayment, notes: e.target.value })}
                   className="bg-input border-border text-foreground"
                 />
               </div>
               <Button type="submit" className="w-full gradient-primary text-primary-foreground hover:shadow-golden transition-smooth">
-                Registrar Pagamento
+                {newPayment.type === 'saida' ? 'Registrar Saída' : 'Registrar Entrada'}
               </Button>
             </form>
           </CardContent>
@@ -132,7 +174,7 @@ export const CashierTab = ({
           <CardHeader>
             <CardTitle className="text-foreground">Movimentações Recentes</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Total: R$ {totalRevenue.toFixed(2)}
+              Saldo Atual: R$ {totalRevenue.toFixed(2)}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -141,12 +183,19 @@ export const CashierTab = ({
                 <div key={payment.id} className="p-4 bg-secondary rounded-lg border border-border">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">{payment.client}</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="font-medium text-foreground">{payment.client}</p>
+                        <span className={`text-xs font-medium px-2 py-1 rounded border ${payment.type === 'entrada' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}`}>
+                          {(payment.type || 'entrada').toUpperCase()}
+                        </span>
+                      </div>
                       <p className="text-sm text-muted-foreground">{payment.service}</p>
                       <p className="text-sm text-muted-foreground">{payment.date} - {payment.paymentMethod}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-success font-bold">R$ {payment.amount.toFixed(2)}</span>
+                      <span className={`font-bold ${payment.type === 'entrada' ? 'text-success' : 'text-destructive'}`}>
+                        {payment.type === 'entrada' ? '+' : '-'}R$ {payment.amount.toFixed(2)}
+                      </span>
                       <div className="flex gap-1 ml-2">
                         <Button
                           size="sm"
@@ -160,7 +209,7 @@ export const CashierTab = ({
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            if (window.confirm('Tem certeza que deseja excluir este pagamento?')) {
+                            if (window.confirm('Tem certeza que deseja excluir esta movimentação?')) {
                               onDeletePayment(payment.id);
                             }
                           }}
@@ -174,7 +223,7 @@ export const CashierTab = ({
                 </div>
               ))}
               {payments.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">Nenhum pagamento registrado</p>
+                <p className="text-muted-foreground text-center py-8">Nenhuma movimentação registrada</p>
               )}
             </div>
           </CardContent>

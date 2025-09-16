@@ -30,7 +30,10 @@ export const ReportsTab = ({
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">R$ {totalRevenue.toFixed(2)}</div>
-            <p className="text-muted-foreground">Total de {payments.length} transações</p>
+            <p className="text-muted-foreground">
+              Entradas: R$ {payments.filter(p => p.type === 'entrada' || !p.type).reduce((sum, p) => sum + p.amount, 0).toFixed(2)} | 
+              Saídas: R$ {payments.filter(p => p.type === 'saida').reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+            </p>
           </CardContent>
         </Card>
         
@@ -89,9 +92,9 @@ export const ReportsTab = ({
           <CardContent>
             <div className="space-y-4">
               {services.map(service => {
-                const servicePayments = payments.filter(p => p.service === service.name);
+                const servicePayments = payments.filter(p => p.service === service.name && p.type !== 'saida');
                 const serviceTotal = servicePayments.reduce((sum, p) => sum + p.amount, 0);
-                return (
+                return serviceTotal > 0 ? (
                   <div key={service.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
                     <div>
                       <p className="font-medium text-foreground">{service.name}</p>
@@ -102,7 +105,7 @@ export const ReportsTab = ({
                       <p className="text-xs text-muted-foreground">Preço: R$ {service.price.toFixed(2)}</p>
                     </div>
                   </div>
-                );
+                ) : null;
               })}
               {services.length === 0 && (
                 <p className="text-muted-foreground text-center py-8">Nenhum serviço cadastrado</p>
@@ -121,10 +124,10 @@ export const ReportsTab = ({
                 const profAppointments = appointments.filter(apt => apt.professional === professional.name);
                 const profPayments = payments.filter(p => {
                   const apt = appointments.find(a => a.client === p.client && a.service === p.service);
-                  return apt?.professional === professional.name;
+                  return apt?.professional === professional.name && p.type !== 'saida';
                 });
                 const profTotal = profPayments.reduce((sum, p) => sum + p.amount, 0);
-                return (
+                return profTotal > 0 || profAppointments.length > 0 ? (
                   <div key={professional.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
                     <div>
                       <p className="font-medium text-foreground">{professional.name}</p>
@@ -135,7 +138,7 @@ export const ReportsTab = ({
                       <p className="text-xs text-muted-foreground">{professional.specialty}</p>
                     </div>
                   </div>
-                );
+                ) : null;
               })}
               {professionals.length === 0 && (
                 <p className="text-muted-foreground text-center py-8">Nenhum profissional cadastrado</p>
@@ -152,7 +155,7 @@ export const ReportsTab = ({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {['dinheiro', 'cartao-debito', 'cartao-credito', 'pix'].map(method => {
-              const methodPayments = payments.filter(p => p.paymentMethod === method);
+              const methodPayments = payments.filter(p => p.paymentMethod === method && p.type !== 'saida');
               const methodTotal = methodPayments.reduce((sum, p) => sum + p.amount, 0);
               const methodNames = {
                 'dinheiro': 'Dinheiro',
