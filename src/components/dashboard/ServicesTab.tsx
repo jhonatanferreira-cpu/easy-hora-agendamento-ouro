@@ -3,13 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 
 interface ServicesTabProps {
   services: any[];
   newService: any;
   setNewService: (service: any) => void;
   onAddService: (e: React.FormEvent) => void;
+  onEditService: (service: any) => void;
+  onDeleteService: (id: string) => void;
+  editingService: any;
+  setEditingService: (service: any) => void;
 }
 
 export const ServicesTab = ({
@@ -17,6 +21,10 @@ export const ServicesTab = ({
   newService,
   setNewService,
   onAddService,
+  onEditService,
+  onDeleteService,
+  editingService,
+  setEditingService,
 }: ServicesTabProps) => {
   return (
     <div className="space-y-6">
@@ -103,6 +111,28 @@ export const ServicesTab = ({
                       {service.description && (
                         <p className="text-sm text-muted-foreground mt-2">{service.description}</p>
                       )}
+                    </div>
+                    <div className="flex gap-2 ml-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingService(service)}
+                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
+                            onDeleteService(service.id);
+                          }
+                        }}
+                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>

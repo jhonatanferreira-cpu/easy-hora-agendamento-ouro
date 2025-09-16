@@ -3,13 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 
 interface ClientsTabProps {
   clients: any[];
   newClient: any;
   setNewClient: (client: any) => void;
   onAddClient: (e: React.FormEvent) => void;
+  onEditClient: (client: any) => void;
+  onDeleteClient: (id: string) => void;
+  editingClient: any;
+  setEditingClient: (client: any) => void;
 }
 
 export const ClientsTab = ({
@@ -17,6 +21,10 @@ export const ClientsTab = ({
   newClient,
   setNewClient,
   onAddClient,
+  onEditClient,
+  onDeleteClient,
+  editingClient,
+  setEditingClient,
 }: ClientsTabProps) => {
   return (
     <div className="space-y-6">
@@ -88,18 +96,40 @@ export const ClientsTab = ({
           <CardContent>
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {clients.map((client) => (
-                <div key={client.id} className="p-4 bg-secondary rounded-lg border border-border">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-foreground">{client.name}</p>
-                      <p className="text-sm text-muted-foreground">{client.phone}</p>
-                      {client.email && <p className="text-sm text-muted-foreground">{client.email}</p>}
+                  <div key={client.id} className="p-4 bg-secondary rounded-lg border border-border">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">{client.name}</p>
+                        <p className="text-sm text-muted-foreground">{client.phone}</p>
+                        {client.email && <p className="text-sm text-muted-foreground">{client.email}</p>}
+                        {client.notes && (
+                          <p className="text-sm text-muted-foreground mt-2">{client.notes}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 ml-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingClient(client)}
+                          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
+                              onDeleteClient(client.id);
+                            }
+                          }}
+                          className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  {client.notes && (
-                    <p className="text-sm text-muted-foreground mt-2">{client.notes}</p>
-                  )}
-                </div>
               ))}
               {clients.length === 0 && (
                 <p className="text-muted-foreground text-center py-8">Nenhum cliente cadastrado</p>

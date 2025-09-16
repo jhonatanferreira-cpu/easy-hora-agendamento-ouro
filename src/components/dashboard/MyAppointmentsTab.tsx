@@ -1,6 +1,8 @@
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface MyAppointmentsTabProps {
@@ -11,6 +13,8 @@ interface MyAppointmentsTabProps {
   setProfessionalFilter: (filter: string) => void;
   dateFilter: string;
   setDateFilter: (filter: string) => void;
+  onEditAppointment: (appointment: any) => void;
+  onDeleteAppointment: (id: string) => void;
 }
 
 export const MyAppointmentsTab = ({
@@ -21,6 +25,8 @@ export const MyAppointmentsTab = ({
   setProfessionalFilter,
   dateFilter,
   setDateFilter,
+  onEditAppointment,
+  onDeleteAppointment,
 }: MyAppointmentsTabProps) => {
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -95,9 +101,33 @@ export const MyAppointmentsTab = ({
                             <p className="text-xs text-muted-foreground mt-1">Obs: {appointment.notes}</p>
                           )}
                         </div>
+                        {appointment.status === 'finalizado' && (
+                          <div className="flex gap-2 ml-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onEditAppointment(appointment)}
+                              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (window.confirm('Tem certeza que deseja excluir este agendamento?')) {
+                                  onDeleteAppointment(appointment.id);
+                                }
+                              }}
+                              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       {appointment.cancelReason && (
-                        <p className="text-xs text-muted-foreground mt-2 p-2 bg-red-50 rounded">
+                        <p className="text-xs text-muted-foreground mt-2 p-2 bg-destructive/10 rounded">
                           Motivo do cancelamento: {appointment.cancelReason}
                         </p>
                       )}

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 
 interface CashierTabProps {
   payments: any[];
@@ -14,6 +14,10 @@ interface CashierTabProps {
   setNewPayment: (payment: any) => void;
   onAddPayment: (e: React.FormEvent) => void;
   totalRevenue: number;
+  onEditPayment: (payment: any) => void;
+  onDeletePayment: (id: string) => void;
+  editingPayment: any;
+  setEditingPayment: (payment: any) => void;
 }
 
 export const CashierTab = ({
@@ -24,6 +28,10 @@ export const CashierTab = ({
   setNewPayment,
   onAddPayment,
   totalRevenue,
+  onEditPayment,
+  onDeletePayment,
+  editingPayment,
+  setEditingPayment,
 }: CashierTabProps) => {
   return (
     <div className="space-y-6">
@@ -132,12 +140,36 @@ export const CashierTab = ({
               {payments.map((payment) => (
                 <div key={payment.id} className="p-4 bg-secondary rounded-lg border border-border">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-foreground">{payment.client}</p>
                       <p className="text-sm text-muted-foreground">{payment.service}</p>
                       <p className="text-sm text-muted-foreground">{payment.date} - {payment.paymentMethod}</p>
                     </div>
-                    <span className="text-success font-bold">R$ {payment.amount.toFixed(2)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-success font-bold">R$ {payment.amount.toFixed(2)}</span>
+                      <div className="flex gap-1 ml-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingPayment(payment)}
+                          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (window.confirm('Tem certeza que deseja excluir este pagamento?')) {
+                              onDeletePayment(payment.id);
+                            }
+                          }}
+                          className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

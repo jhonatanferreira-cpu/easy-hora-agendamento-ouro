@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, LogOut } from "lucide-react";
 import { format } from "date-fns";
@@ -92,6 +97,12 @@ const Dashboard = () => {
   const [newService, setNewService] = useState({ name: "", price: "", duration: "", description: "" });
   const [newAppointment, setNewAppointment] = useState({ client: "", service: "", professional: "", date: "", time: "", notes: "" });
   const [newPayment, setNewPayment] = useState({ date: "", client: "", service: "", amount: "", paymentMethod: "", notes: "" });
+
+  // Edit states
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   // UI states
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -275,6 +286,85 @@ const Dashboard = () => {
     }
   };
 
+  // Edit/Delete functions for clients
+  const handleEditClient = (client: Client) => {
+    const updated = clients.map(c => c.id === client.id ? client : c);
+    setClients(updated);
+    localStorage.setItem("easyhora_clients", JSON.stringify(updated));
+    setEditingClient(null);
+    toast({ title: "Sucesso", description: "Cliente atualizado com sucesso!" });
+  };
+
+  const handleDeleteClient = (id: string) => {
+    const updated = clients.filter(c => c.id !== id);
+    setClients(updated);
+    localStorage.setItem("easyhora_clients", JSON.stringify(updated));
+    toast({ title: "Sucesso", description: "Cliente excluído com sucesso!" });
+  };
+
+  // Edit/Delete functions for professionals
+  const handleEditProfessional = (professional: Professional) => {
+    const updated = professionals.map(p => p.id === professional.id ? professional : p);
+    setProfessionals(updated);
+    localStorage.setItem("easyhora_professionals", JSON.stringify(updated));
+    setEditingProfessional(null);
+    toast({ title: "Sucesso", description: "Profissional atualizado com sucesso!" });
+  };
+
+  const handleDeleteProfessional = (id: string) => {
+    const updated = professionals.filter(p => p.id !== id);
+    setProfessionals(updated);
+    localStorage.setItem("easyhora_professionals", JSON.stringify(updated));
+    toast({ title: "Sucesso", description: "Profissional excluído com sucesso!" });
+  };
+
+  // Edit/Delete functions for services
+  const handleEditService = (service: Service) => {
+    const updated = services.map(s => s.id === service.id ? service : s);
+    setServices(updated);
+    localStorage.setItem("easyhora_services", JSON.stringify(updated));
+    setEditingService(null);
+    toast({ title: "Sucesso", description: "Serviço atualizado com sucesso!" });
+  };
+
+  const handleDeleteService = (id: string) => {
+    const updated = services.filter(s => s.id !== id);
+    setServices(updated);
+    localStorage.setItem("easyhora_services", JSON.stringify(updated));
+    toast({ title: "Sucesso", description: "Serviço excluído com sucesso!" });
+  };
+
+  // Edit/Delete functions for payments
+  const handleEditPayment = (payment: Payment) => {
+    const updated = payments.map(p => p.id === payment.id ? payment : p);
+    setPayments(updated);
+    localStorage.setItem("easyhora_payments", JSON.stringify(updated));
+    setEditingPayment(null);
+    toast({ title: "Sucesso", description: "Pagamento atualizado com sucesso!" });
+  };
+
+  const handleDeletePayment = (id: string) => {
+    const updated = payments.filter(p => p.id !== id);
+    setPayments(updated);
+    localStorage.setItem("easyhora_payments", JSON.stringify(updated));
+    toast({ title: "Sucesso", description: "Pagamento excluído com sucesso!" });
+  };
+
+  // Edit/Delete functions for appointments
+  const handleEditAppointment = (appointment: Appointment) => {
+    const updated = appointments.map(a => a.id === appointment.id ? appointment : a);
+    setAppointments(updated);
+    localStorage.setItem("easyhora_appointments", JSON.stringify(updated));
+    toast({ title: "Sucesso", description: "Agendamento atualizado com sucesso!" });
+  };
+
+  const handleDeleteAppointment = (id: string) => {
+    const updated = appointments.filter(a => a.id !== id);
+    setAppointments(updated);
+    localStorage.setItem("easyhora_appointments", JSON.stringify(updated));
+    toast({ title: "Sucesso", description: "Agendamento excluído com sucesso!" });
+  };
+
   const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
   const todayAppointments = appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).length;
 
@@ -373,6 +463,8 @@ const Dashboard = () => {
               setProfessionalFilter={setProfessionalFilter}
               dateFilter={dateFilter}
               setDateFilter={setDateFilter}
+              onEditAppointment={handleEditAppointment}
+              onDeleteAppointment={handleDeleteAppointment}
             />
           </TabsContent>
 
@@ -383,6 +475,10 @@ const Dashboard = () => {
               newClient={newClient}
               setNewClient={setNewClient}
               onAddClient={handleAddClient}
+              onEditClient={handleEditClient}
+              onDeleteClient={handleDeleteClient}
+              editingClient={editingClient}
+              setEditingClient={setEditingClient}
             />
           </TabsContent>
 
@@ -393,6 +489,10 @@ const Dashboard = () => {
               newService={newService}
               setNewService={setNewService}
               onAddService={handleAddService}
+              onEditService={handleEditService}
+              onDeleteService={handleDeleteService}
+              editingService={editingService}
+              setEditingService={setEditingService}
             />
           </TabsContent>
 
@@ -403,6 +503,10 @@ const Dashboard = () => {
               newProfessional={newProfessional}
               setNewProfessional={setNewProfessional}
               onAddProfessional={handleAddProfessional}
+              onEditProfessional={handleEditProfessional}
+              onDeleteProfessional={handleDeleteProfessional}
+              editingProfessional={editingProfessional}
+              setEditingProfessional={setEditingProfessional}
             />
           </TabsContent>
 
@@ -416,6 +520,10 @@ const Dashboard = () => {
               setNewPayment={setNewPayment}
               onAddPayment={handleAddPayment}
               totalRevenue={totalRevenue}
+              onEditPayment={handleEditPayment}
+              onDeletePayment={handleDeletePayment}
+              editingPayment={editingPayment}
+              setEditingPayment={setEditingPayment}
             />
           </TabsContent>
 
@@ -442,6 +550,259 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={!!editingClient} onOpenChange={() => setEditingClient(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          {editingClient && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEditClient(editingClient);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editClientName">Nome</Label>
+                <Input
+                  id="editClientName"
+                  value={editingClient.name}
+                  onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editClientPhone">Telefone</Label>
+                <Input
+                  id="editClientPhone"
+                  value={editingClient.phone}
+                  onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editClientEmail">E-mail</Label>
+                <Input
+                  id="editClientEmail"
+                  type="email"
+                  value={editingClient.email}
+                  onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editClientNotes">Observações</Label>
+                <Textarea
+                  id="editClientNotes"
+                  value={editingClient.notes}
+                  onChange={(e) => setEditingClient({ ...editingClient, notes: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setEditingClient(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Professional Dialog */}
+      <Dialog open={!!editingProfessional} onOpenChange={() => setEditingProfessional(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Profissional</DialogTitle>
+          </DialogHeader>
+          {editingProfessional && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEditProfessional(editingProfessional);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editProfName">Nome</Label>
+                <Input
+                  id="editProfName"
+                  value={editingProfessional.name}
+                  onChange={(e) => setEditingProfessional({ ...editingProfessional, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editSpecialty">Especialidade</Label>
+                <Input
+                  id="editSpecialty"
+                  value={editingProfessional.specialty}
+                  onChange={(e) => setEditingProfessional({ ...editingProfessional, specialty: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAvailability">Disponibilidade</Label>
+                <Input
+                  id="editAvailability"
+                  value={editingProfessional.availability}
+                  onChange={(e) => setEditingProfessional({ ...editingProfessional, availability: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setEditingProfessional(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={!!editingService} onOpenChange={() => setEditingService(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+          </DialogHeader>
+          {editingService && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEditService(editingService);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editServiceName">Nome do Serviço</Label>
+                <Input
+                  id="editServiceName"
+                  value={editingService.name}
+                  onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editServicePrice">Preço (R$)</Label>
+                  <Input
+                    id="editServicePrice"
+                    type="number"
+                    step="0.01"
+                    value={editingService.price}
+                    onChange={(e) => setEditingService({ ...editingService, price: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editServiceDuration">Duração (min)</Label>
+                  <Input
+                    id="editServiceDuration"
+                    type="number"
+                    value={editingService.duration}
+                    onChange={(e) => setEditingService({ ...editingService, duration: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editServiceDescription">Descrição</Label>
+                <Textarea
+                  id="editServiceDescription"
+                  value={editingService.description}
+                  onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setEditingService(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={!!editingPayment} onOpenChange={() => setEditingPayment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Pagamento</DialogTitle>
+          </DialogHeader>
+          {editingPayment && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEditPayment(editingPayment);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editPaymentDate">Data</Label>
+                <Input
+                  id="editPaymentDate"
+                  type="date"
+                  value={editingPayment.date}
+                  onChange={(e) => setEditingPayment({ ...editingPayment, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPaymentClient">Cliente</Label>
+                <Select value={editingPayment.client} onValueChange={(value) => setEditingPayment({ ...editingPayment, client: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.name}>
+                        {client.name} - {client.phone}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPaymentService">Serviço</Label>
+                <Select value={editingPayment.service} onValueChange={(value) => setEditingPayment({ ...editingPayment, service: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.name}>
+                        {service.name} - R$ {service.price.toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAmount">Valor (R$)</Label>
+                <Input
+                  id="editAmount"
+                  type="number"
+                  step="0.01"
+                  value={editingPayment.amount}
+                  onChange={(e) => setEditingPayment({ ...editingPayment, amount: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPaymentMethod">Forma de Pagamento</Label>
+                <Select value={editingPayment.paymentMethod} onValueChange={(value) => setEditingPayment({ ...editingPayment, paymentMethod: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a forma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="cartao-debito">Cartão de Débito</SelectItem>
+                    <SelectItem value="cartao-credito">Cartão de Crédito</SelectItem>
+                    <SelectItem value="pix">PIX</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPaymentNotes">Observações</Label>
+                <Textarea
+                  id="editPaymentNotes"
+                  value={editingPayment.notes}
+                  onChange={(e) => setEditingPayment({ ...editingPayment, notes: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setEditingPayment(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
