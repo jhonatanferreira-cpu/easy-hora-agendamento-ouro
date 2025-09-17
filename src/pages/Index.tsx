@@ -231,9 +231,11 @@ const Index = () => {
                     <span>Suporte básico</span>
                   </li>
                 </ul>
-                <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
-                  Assinar agora
-                </Button>
+                <a href="https://buy.stripe.com/test_00w14pdAcekj4kU821bjW00" target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
+                    Assinar agora
+                  </Button>
+                </a>
               </CardContent>
             </Card>
 
@@ -268,9 +270,11 @@ const Index = () => {
                     <span>Suporte prioritário</span>
                   </li>
                 </ul>
-                <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
-                  Assinar agora
-                </Button>
+                <a href="https://buy.stripe.com/test_5kQ3cxgMo3FF2cM0zzbjW01" target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
+                    Assinar agora
+                  </Button>
+                </a>
               </CardContent>
             </Card>
           </div>
