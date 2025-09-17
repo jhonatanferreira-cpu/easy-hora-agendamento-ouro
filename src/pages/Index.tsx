@@ -190,6 +190,93 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Planos Section */}
+      <section className="py-20 px-4 bg-secondary">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Planos
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Escolha o plano ideal para o seu negócio
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Basic Plan */}
+            <Card className="gradient-card shadow-card border-border hover:shadow-golden transition-smooth animate-fade-in">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-foreground mb-2">Basic</CardTitle>
+                <div className="mb-4">
+                  <span className="text-4xl font-bold text-primary">R$39,90</span>
+                  <span className="text-muted-foreground">/mês</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-3 text-muted-foreground">
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>1 profissional</span>
+                  </li>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Agendamentos ilimitados</span>
+                  </li>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Lembretes automáticos</span>
+                  </li>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Suporte básico</span>
+                  </li>
+                </ul>
+                <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
+                  Assinar agora
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Pro Plan */}
+            <Card className="gradient-card shadow-card border-border hover:shadow-golden transition-smooth animate-fade-in relative overflow-hidden">
+              <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                Popular
+              </div>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-foreground mb-2">Pro</CardTitle>
+                <div className="mb-4">
+                  <span className="text-4xl font-bold text-primary">R$119,90</span>
+                  <span className="text-muted-foreground">/mês</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-3 text-muted-foreground">
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Até 5 profissionais</span>
+                  </li>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Agendamentos ilimitados</span>
+                  </li>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Relatórios avançados</span>
+                  </li>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span>Suporte prioritário</span>
+                  </li>
+                </ul>
+                <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
+                  Assinar agora
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 px-4 bg-secondary">
         <div className="max-w-4xl mx-auto text-center">
