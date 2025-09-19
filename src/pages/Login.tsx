@@ -1,31 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -37,43 +24,13 @@ const Login = () => {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        const errorMessage = error.message === "Invalid login credentials" 
-          ? "Credenciais inválidas. Verifique seu e-mail e senha."
-          : error.message === "Email not confirmed"
-          ? "Por favor, confirme seu e-mail antes de fazer login."
-          : "Erro no login. Tente novamente.";
-          
-        toast({
-          title: "Erro no login",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Login realizado!",
-        description: "Bem-vindo ao EasyHora.",
-      });
-      navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Simulate login
+    localStorage.setItem("easyhora_user", JSON.stringify({ email, name: "Usuário" }));
+    toast({
+      title: "Login realizado!",
+      description: "Bem-vindo ao EasyHora.",
+    });
+    navigate("/dashboard");
   };
 
   return (
@@ -117,10 +74,9 @@ const Login = () => {
               </div>
               <Button 
                 type="submit" 
-                disabled={loading}
-                className="w-full gradient-primary text-primary-foreground font-semibold hover:shadow-golden transition-smooth disabled:opacity-50"
+                className="w-full gradient-primary text-primary-foreground font-semibold hover:shadow-golden transition-smooth"
               >
-                {loading ? "Entrando..." : "Entrar"}
+                Entrar
               </Button>
             </form>
             

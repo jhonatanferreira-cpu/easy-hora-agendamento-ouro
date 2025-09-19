@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const Cadastro = () => {
   const [formData, setFormData] = useState({
@@ -14,26 +13,14 @@ const Cadastro = () => {
     phone: "",
     password: "",
   });
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    checkAuth();
-  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
@@ -45,46 +32,13 @@ const Cadastro = () => {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: formData.name,
-            phone: formData.phone,
-          }
-        }
-      });
-
-      if (error) {
-        toast({
-          title: "Erro no cadastro",
-          description: error.message === "User already registered" 
-            ? "Este e-mail já está cadastrado. Tente fazer login."
-            : "Erro ao criar conta. Tente novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Cadastro realizado!",
-        description: "Verifique seu e-mail para confirmar sua conta.",
-      });
-      navigate("/verify-email");
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Simulate registration
+    localStorage.setItem("easyhora_user", JSON.stringify(formData));
+    toast({
+      title: "Cadastro realizado!",
+      description: "Bem-vindo ao EasyHora. Sua conta foi criada com sucesso.",
+    });
+    navigate("/dashboard");
   };
 
   return (
@@ -154,10 +108,9 @@ const Cadastro = () => {
               </div>
               <Button 
                 type="submit" 
-                disabled={loading}
-                className="w-full gradient-primary text-primary-foreground font-semibold hover:shadow-golden transition-smooth disabled:opacity-50"
+                className="w-full gradient-primary text-primary-foreground font-semibold hover:shadow-golden transition-smooth"
               >
-                {loading ? "Cadastrando..." : "Cadastrar"}
+                Cadastrar
               </Button>
             </form>
             

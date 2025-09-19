@@ -8,10 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, LogOut, Database } from "lucide-react";
+import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, LogOut } from "lucide-react";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
 
 import { AppointmentsTab } from "@/components/dashboard/AppointmentsTab";
 import { MyAppointmentsTab } from "@/components/dashboard/MyAppointmentsTab";
@@ -21,9 +19,8 @@ import { ProfessionalsTab } from "@/components/dashboard/ProfessionalsTab";
 import { CashierTab } from "@/components/dashboard/CashierTab";
 import { ReportsTab } from "@/components/dashboard/ReportsTab";
 import { SettingsTab } from "@/components/dashboard/SettingsTab";
-import { SyncUserProfiles } from "@/components/SyncUserProfiles";
 
-interface AppUser {
+interface User {
   email: string;
   name: string;
 }
@@ -119,36 +116,12 @@ const Dashboard = () => {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
-    // Check authentication status
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      
-      // Check if user has an active plan (simulate check - in real app this would be from database)
-      const hasActivePlan = localStorage.getItem("hasActivePlan") === "true";
-      if (!hasActivePlan) {
-        navigate("/activate-plan");
-        return;
-      }
-      
-      setUser(session.user);
-    };
-
-    checkAuth();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          navigate("/login");
-        } else {
-          setUser(session.user);
-        }
-      }
-    );
+    const userData = localStorage.getItem("easyhora_user");
+    if (!userData) {
+      navigate("/login");
+      return;
+    }
+    setUser(JSON.parse(userData));
 
     // Load data from localStorage
     setClients(JSON.parse(localStorage.getItem("easyhora_clients") || "[]"));
@@ -166,12 +139,10 @@ const Dashboard = () => {
     setPayments(JSON.parse(localStorage.getItem("easyhora_payments") || "[]"));
     setSalonSettings(JSON.parse(localStorage.getItem("easyhora_salon_settings") || '{"name":"","address":"","phone":"","logo":""}'));
     setBlockedDates(JSON.parse(localStorage.getItem("easyhora_blocked_dates") || "[]"));
-
-    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem("easyhora_user");
     navigate("/");
   };
 
@@ -426,7 +397,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">EasyHora</h1>
-              <p className="text-muted-foreground">Bem-vindo, {user?.user_metadata?.name || user?.email}</p>
+              <p className="text-muted-foreground">Bem-vindo, {user.name}</p>
             </div>
           </div>
           <Button variant="outline" onClick={handleLogout} className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
@@ -439,7 +410,7 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 bg-secondary">
+          <TabsList className="grid w-full grid-cols-8 bg-secondary">
             <TabsTrigger value="appointments" className="flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Agendamentos</span>
@@ -471,10 +442,6 @@ const Dashboard = () => {
             <TabsTrigger value="settings" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Configurações</span>
-            </TabsTrigger>
-            <TabsTrigger value="admin" className="flex items-center space-x-2">
-              <Database className="w-4 h-4" />
-              <span className="hidden sm:inline">Admin</span>
             </TabsTrigger>
           </TabsList>
 
@@ -596,14 +563,6 @@ const Dashboard = () => {
               onSaveSettings={handleSaveSettings}
               onLogoUpload={handleLogoUpload}
             />
-          </TabsContent>
-
-          {/* Admin Tab */}
-          <TabsContent value="admin" className="space-y-6">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold mb-6">Administração do Sistema</h2>
-              <SyncUserProfiles />
-            </div>
           </TabsContent>
         </Tabs>
       </div>

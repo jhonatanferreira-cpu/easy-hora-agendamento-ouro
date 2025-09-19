@@ -1,4 +1,1 @@
 project_id = "kufyvfjylvzdvawknhvx"
-
-[functions.sync-user-profiles]
-verify_jwt = false
