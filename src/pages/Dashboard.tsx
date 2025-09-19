@@ -125,6 +125,14 @@ const Dashboard = () => {
         navigate("/login");
         return;
       }
+      
+      // Check if user has an active plan (simulate check - in real app this would be from database)
+      const hasActivePlan = localStorage.getItem("hasActivePlan") === "true";
+      if (!hasActivePlan) {
+        navigate("/activate-plan");
+        return;
+      }
+      
       setUser(session.user);
     };
 

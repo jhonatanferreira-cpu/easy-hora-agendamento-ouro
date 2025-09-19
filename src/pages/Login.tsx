@@ -46,9 +46,15 @@ const Login = () => {
       });
 
       if (error) {
+        const errorMessage = error.message === "Invalid login credentials" 
+          ? "Credenciais inválidas. Verifique seu e-mail e senha."
+          : error.message === "Email not confirmed"
+          ? "Por favor, confirme seu e-mail antes de fazer login."
+          : "Erro no login. Tente novamente.";
+          
         toast({
           title: "Erro no login",
-          description: "Credenciais inválidas. Verifique seu e-mail e senha.",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
