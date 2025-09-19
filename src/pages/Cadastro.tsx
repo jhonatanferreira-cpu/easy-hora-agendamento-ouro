@@ -73,9 +73,9 @@ const Cadastro = () => {
 
       toast({
         title: "Cadastro realizado!",
-        description: "Verifique seu e-mail para confirmar sua conta.",
+        description: "Bem-vindo ao EasyHora. Sua conta foi criada com sucesso.",
       });
-      navigate("/verify-email");
+      navigate("/dashboard");
     } catch (error) {
       toast({
         title: "Erro",
