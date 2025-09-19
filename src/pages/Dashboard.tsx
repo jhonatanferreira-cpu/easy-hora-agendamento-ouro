@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, LogOut } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 import { AppointmentsTab } from "@/components/dashboard/AppointmentsTab";
 import { MyAppointmentsTab } from "@/components/dashboard/MyAppointmentsTab";
@@ -20,7 +22,7 @@ import { CashierTab } from "@/components/dashboard/CashierTab";
 import { ReportsTab } from "@/components/dashboard/ReportsTab";
 import { SettingsTab } from "@/components/dashboard/SettingsTab";
 
-interface User {
+interface AppUser {
   email: string;
   name: string;
 }
@@ -116,12 +118,28 @@ const Dashboard = () => {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("easyhora_user");
-    if (!userData) {
-      navigate("/login");
-      return;
-    }
-    setUser(JSON.parse(userData));
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+      setUser(session.user);
+    };
+
+    checkAuth();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          navigate("/login");
+        } else {
+          setUser(session.user);
+        }
+      }
+    );
 
     // Load data from localStorage
     setClients(JSON.parse(localStorage.getItem("easyhora_clients") || "[]"));
@@ -139,10 +157,12 @@ const Dashboard = () => {
     setPayments(JSON.parse(localStorage.getItem("easyhora_payments") || "[]"));
     setSalonSettings(JSON.parse(localStorage.getItem("easyhora_salon_settings") || '{"name":"","address":"","phone":"","logo":""}'));
     setBlockedDates(JSON.parse(localStorage.getItem("easyhora_blocked_dates") || "[]"));
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("easyhora_user");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/");
   };
 
@@ -397,7 +417,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">EasyHora</h1>
-              <p className="text-muted-foreground">Bem-vindo, {user.name}</p>
+              <p className="text-muted-foreground">Bem-vindo, {user?.user_metadata?.name || user?.email}</p>
             </div>
           </div>
           <Button variant="outline" onClick={handleLogout} className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
