@@ -1,38 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Crown, Zap } from "lucide-react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useState } from "react";
 
 const PlanActivation = () => {
-  const supabase = createClientComponentClient();
-  const [loading, setLoading] = useState(false);
-
-  const startTrial = async (planUrl: string) => {
-    setLoading(true);
-
-    // Pegar usuário logado
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("Você precisa estar logado para iniciar o teste grátis");
-      setLoading(false);
-      return;
-    }
-
-    // Criar ou atualizar profile
-    await supabase.from("profiles").upsert({
-      user_id: user.id,
-      email: user.email,
-      plano_ativo: false,
-    });
-
-    // Redireciona para Stripe
-    window.location.href = planUrl;
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-4xl mx-auto">
@@ -51,7 +21,7 @@ const PlanActivation = () => {
             <span className="text-primary font-medium">Sem compromisso • Cancele quando quiser</span>
           </div>
         </div>
-
+        
         <div className="grid md:grid-cols-2 gap-8">
           {/* Basic Plan */}
           <Card className="gradient-card shadow-card border-border hover:shadow-golden transition-smooth animate-fade-in">
@@ -84,15 +54,11 @@ const PlanActivation = () => {
                   <span>Suporte básico</span>
                 </li>
               </ul>
-              <Button
-                className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth"
-                onClick={() =>
-                  startTrial("https://buy.stripe.com/eVq6oJ7ae5Hj7AhgIkbfO00")
-                }
-                disabled={loading}
-              >
-                {loading ? "Processando..." : "Começar Teste Grátis"}
-              </Button>
+              <a href="https://buy.stripe.com/eVq6oJ7ae5Hj7AhgIkbfO00" target="_blank" rel="noopener noreferrer">
+                <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
+                  Começar Teste Grátis
+                </Button>
+              </a>
             </CardContent>
           </Card>
 
@@ -130,19 +96,15 @@ const PlanActivation = () => {
                   <span>Suporte prioritário</span>
                 </li>
               </ul>
-              <Button
-                className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth"
-                onClick={() =>
-                  startTrial("https://buy.stripe.com/7sY6oJcuy4Df8El2RubfO01")
-                }
-                disabled={loading}
-              >
-                {loading ? "Processando..." : "Começar Teste Grátis"}
-              </Button>
+              <a href="https://buy.stripe.com/7sY6oJcuy4Df8El2RubfO01" target="_blank" rel="noopener noreferrer">
+                <Button className="w-full gradient-primary text-primary-foreground font-semibold py-3 hover:shadow-golden transition-smooth">
+                  Começar Teste Grátis
+                </Button>
+              </a>
             </CardContent>
           </Card>
         </div>
-
+        
         <div className="text-center mt-8">
           <p className="text-sm text-muted-foreground">
             Ao clicar em "Começar Teste Grátis", você concorda com nossos termos de uso.
