@@ -40,18 +40,19 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        const errorMessage = error.message === "Invalid login credentials" 
-          ? "Credenciais inválidas. Verifique seu e-mail e senha."
-          : error.message === "Email not confirmed"
-          ? "Por favor, confirme seu e-mail antes de fazer login."
-          : "Erro no login. Tente novamente.";
-          
+        const errorMessage =
+          error.message === "Invalid login credentials"
+            ? "Credenciais inválidas. Verifique seu e-mail e senha."
+            : error.message === "Email not confirmed"
+            ? "Por favor, confirme seu e-mail antes de fazer login."
+            : "Erro no login. Tente novamente.";
+
         toast({
           title: "Erro no login",
           description: errorMessage,
@@ -64,7 +65,27 @@ const Login = () => {
         title: "Login realizado!",
         description: "Bem-vindo ao EasyHora.",
       });
+
+      // ------------------------------
+      // TEMPORÁRIO: Ignora plano ativo
+      // ------------------------------
       navigate("/dashboard");
+
+      // ------------------------------
+      // FUTURO: Descomente para verificar plano
+      /*
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plano_ativo")
+        .eq("user_id", data.user.id)
+        .single();
+
+      if (!profile || !profile.plano_ativo) {
+        navigate("/planos"); // redireciona para tela de planos
+      } else {
+        navigate("/dashboard"); // painel liberado
+      }
+      */
     } catch (error) {
       toast({
         title: "Erro",
