@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, LogOut } from "lucide-react";
+import { Calendar, Users, UserPlus, DollarSign, BarChart3, Settings, LogOut, Database } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -21,6 +21,7 @@ import { ProfessionalsTab } from "@/components/dashboard/ProfessionalsTab";
 import { CashierTab } from "@/components/dashboard/CashierTab";
 import { ReportsTab } from "@/components/dashboard/ReportsTab";
 import { SettingsTab } from "@/components/dashboard/SettingsTab";
+import { SyncUserProfiles } from "@/components/SyncUserProfiles";
 
 interface AppUser {
   email: string;
@@ -438,7 +439,7 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-secondary">
+          <TabsList className="grid w-full grid-cols-9 bg-secondary">
             <TabsTrigger value="appointments" className="flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Agendamentos</span>
@@ -470,6 +471,10 @@ const Dashboard = () => {
             <TabsTrigger value="settings" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Configurações</span>
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="flex items-center space-x-2">
+              <Database className="w-4 h-4" />
+              <span className="hidden sm:inline">Admin</span>
             </TabsTrigger>
           </TabsList>
 
@@ -591,6 +596,14 @@ const Dashboard = () => {
               onSaveSettings={handleSaveSettings}
               onLogoUpload={handleLogoUpload}
             />
+          </TabsContent>
+
+          {/* Admin Tab */}
+          <TabsContent value="admin" className="space-y-6">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold mb-6">Administração do Sistema</h2>
+              <SyncUserProfiles />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
