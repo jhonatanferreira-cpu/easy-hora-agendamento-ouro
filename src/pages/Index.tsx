@@ -74,12 +74,12 @@ const Index = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up">
-            <Link to="/auth">
+            <Link to="/cadastro">
               <Button className="gradient-primary text-primary-foreground font-semibold px-8 py-4 text-lg hover:shadow-golden transition-smooth">
                 Começar Grátis
               </Button>
             </Link>
-            <Link to="/auth">
+            <Link to="/login">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-4 text-lg transition-smooth">
                 Entrar
               </Button>
@@ -291,7 +291,7 @@ const Index = () => {
           <p className="text-xl text-muted-foreground mb-8">
             Junte-se a milhares de salões que já transformaram sua gestão com o EasyHora
           </p>
-          <Link to="/auth">
+          <Link to="/cadastro">
             <Button className="gradient-primary text-primary-foreground font-semibold px-12 py-6 text-xl hover:shadow-golden transition-smooth animate-glow">
               Começar Teste Grátis
             </Button>
