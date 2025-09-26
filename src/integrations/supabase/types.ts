@@ -14,7 +14,300 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          data_hora: string
+          id: string
+          profissional_id: string | null
+          salon_id: string | null
+          servico: string
+          servico_id: string | null
+          status: string | null
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          data_hora: string
+          id?: string
+          profissional_id?: string | null
+          salon_id?: string | null
+          servico: string
+          servico_id?: string | null
+          status?: string | null
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          data_hora?: string
+          id?: string
+          profissional_id?: string | null
+          salon_id?: string | null
+          servico?: string
+          servico_id?: string | null
+          status?: string | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "saloes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          salon_id: string
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          salon_id: string
+          telefone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          salon_id?: string
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "saloes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          email: string | null
+          plano_ativo: boolean
+          stripe_customer_id: string | null
+          user_id: string
+        }
+        Insert: {
+          email?: string | null
+          plano_ativo?: boolean
+          stripe_customer_id?: string | null
+          user_id: string
+        }
+        Update: {
+          email?: string | null
+          plano_ativo?: boolean
+          stripe_customer_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profissionais: {
+        Row: {
+          created_at: string
+          disponibilidade: string | null
+          especialidade: string
+          id: string
+          nome: string
+          salon_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          disponibilidade?: string | null
+          especialidade: string
+          id?: string
+          nome: string
+          salon_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          disponibilidade?: string | null
+          especialidade?: string
+          id?: string
+          nome?: string
+          salon_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profissionais_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "saloes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saloes: {
+        Row: {
+          created_at: string
+          endereco: string | null
+          id: string
+          link_publico: string
+          logo: string | null
+          nome: string
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          link_publico: string
+          logo?: string | null
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          link_publico?: string
+          logo?: string | null
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      servicos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          duracao: number
+          id: string
+          nome: string
+          preco: number
+          salon_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          duracao?: number
+          id?: string
+          nome: string
+          preco: number
+          salon_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          duracao?: number
+          id?: string
+          nome?: string
+          preco?: number
+          salon_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicos_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "saloes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          plano: string | null
+          stripe_customer_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          plano?: string | null
+          stripe_customer_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          plano?: string | null
+          stripe_customer_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
